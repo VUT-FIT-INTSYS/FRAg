@@ -1,0 +1,16 @@
+
+
+include_reasoning("./reasoning_methods/Basic/FRAgPLReasoningSimple.pl").
+include_reasoning("./reasoning_methods/Basic/FRAgPLReasoningRandom.pl").
+
+include_environment("./environments/shop/shop.pl").
+
+
+set_agents([(bindings, early),
+             (reasoning, simple_reasoning), 
+ 	     (environment, shop)]).		
+
+set_default([(bindings, late), (reasoning, random_reasoning)]).
+
+
+load("fragagent","fragagent",1,[(reasoning, simple_reasoning), (debug, error)]).

@@ -1,0 +1,7 @@
+
+goal(ach,greet,[[]]).
+
+plan(ach,greet,[],[
+			act(printfg("Hello, I am FRAgPL"))
+		]).
+

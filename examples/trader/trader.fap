@@ -1,0 +1,22 @@
+     
+goal(ach,sell,[[]]).
+
+
+plan(ach,
+     sell,                        
+     [not(closed),buyer(Buyer, CD, Buy_Price)], 
+     [
+	test(seller(Seller, CD, Sel_Price)),
+       	rel(Buy_Price > Sel_Price),
+        act(card_shop, sell(Seller, Buyer, CD)),
+        act(printfg(
+            '~w selling ~w CD ~w for ~w', 
+            [Seller, Buyer, CD, Sel_Price])),
+        ach(sell)
+     ]).
+
+
+plan(ach,
+     sell,                        
+     [closed], [
+       act(printfg('It is closed, finish'))]).

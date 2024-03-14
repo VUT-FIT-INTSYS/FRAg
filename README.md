@@ -7,26 +7,62 @@ The system is still under development, the current solution is in "alpha" versio
 More detailed information can be found in our paper[[1]](#1) 
 published at the [ICCART 2024](https://icaart.scitevents.org/) conference.
 
-## Program Execution
+## How to set up and run FRAg
 
-Let the directory where FRAg is located be marked as `@FRAg`. There should be subdirectories 
-`@FRAg\core` and `@FRAg\examples` at least.
+### Linux
 
-In SWI PROLOG consult `@FRAg\core\FRAgPL.pl`:
+Install SWI Prolog. The exact installation process can vary depending on your distro.
+
+* For RedHat-based systems (Fedora/RHEL/CentOS), run:
+
+  ```
+  $ sudo dnf install pl
+  ```
+  
+* Ubuntu does not have SWI Prolog in base repositories. First, you need to add a SWI Prolog repository:
+
+  ```
+  $ sudo add-apt-repository ppa:swi-prolog/stable
+  $ sudo apt-get update
+  ```
+
+  Then, you can install SWI Prolog:
+
+  ```
+  $ sudo apt-get install swi-prolog
+  ```
+
+Navigate to the place you want to have your FRAg repository and clone it: 
+
 ```
-> swipl @FRAg\core\FRAgPL.pl
+cd <your-desired-location>
+git clone https://github.com/VUT-FIT-INTSYS/FRAg.git
+```
+
+To run FRAg example, navigate to the repository cloned in the prevous step and run:
+
+```
+$ swipl core\FRAgPL.pl
+```
+
+Then consult:
+
+```
 ?- frag('../examples/trader/trader').
 ```
 
-Output is in `@FRAg\examples\trader\*.out` files. Filename depends on setting of the trader 
-multiagent system in `@FRAg\examples\trader\trader.mas2fp`
+Output is located in  `examples\trader\*.out` files. Filename depends on setting of the trader 
+multiagent system in `examples\trader\trader.mas2fp`
 
+### Windows
+Currently, Windows OS is not fully supported. However, if you want to run FRAg on Windows, you can use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install).
+Once you have WSL and your preferred linux distro installed, you can proceed with the Linux installation and execution steps above (tested on Windows 11 and Ubuntu in WSL).
 
 ## Program description
 
 The program consists of agent code and a multiagent system setting.
 
-### Agent code (in @FRAg\examples\trader\trader.fap)
+### Agent code (examples\trader\trader.fap)
 
 This file contains a procedure to run and analyse the examples we presented at the 
 [ICCART 2024](https://icaart.scitevents.org/) conference.
@@ -77,7 +113,7 @@ plan(ach,
 ```
 
 
-### Multiagent system settings (in @FRAg\examples\trader\trader.mas2fp)
+### Multiagent system settings (examples\trader\trader.mas2fp)
 
 The settings for the multi-agent card trading system can be found in the `trader.mas2fp` file. This extension is used 
 by FRAg as the default for metafiles representing a population of agents, binding  them to environments along with 
@@ -109,7 +145,7 @@ load("peter","../examples/trader/trader",1,[(debug, systemdbg), (bindings, late)
 This code is interpreted by the FRAg system and the following is done:
 
 ### Load environment (a)
-The environment is loaded from the file `@FRAg/core-environments/shop/shop.pl`. This file is a PROLOG module 
+The environment is loaded from the file `core/environments/shop/shop.pl`. This file is a PROLOG module 
 called `card_shop` and the name of this module still represents it in the FRAg system. 
 This environment will simulate everything needed for a trading agent and is described later in this text.
 

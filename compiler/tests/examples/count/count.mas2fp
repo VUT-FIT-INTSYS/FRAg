@@ -1,0 +1,2 @@
+load("count_early","<PATH>/count",5,[(bindings,early),(debug,actdbg),(debug,systemdbg)]).
+load("count_late","<PATH>/count",10,[(bindings,late),(debug,actdbg),(debug,systemdbg)]).

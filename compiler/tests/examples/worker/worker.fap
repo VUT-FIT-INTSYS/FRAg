@@ -1,0 +1,38 @@
+fact(path(hall,warehouseA,[warehouseA])).
+fact(path(construction,warehouseA,[hall,warehouseA])).
+fact(path(workshop,warehouseA,[hall,warehouseA])).
+fact(path(warehouseB,warehouseA,[workshop,hall,warehouseA])).
+fact(path(hall,warehouseB,[warehouseB])).
+fact(path(construction,warehouseB,[hall,warehouseB])).
+fact(path(workshop,warehouseB,[hall,warehouseB])).
+fact(path(warehouseA,warehouseB,[workshop,hall,warehouseB])).
+fact(path(construction,hall,[hall])).
+fact(path(workshop,hall,[hall])).
+fact(path(warehouseA,hall,[workshop,hall])).
+fact(path(warehouseB,hall,[workshop,hall])).
+fact(path(hall,construction,[construction])).
+fact(path(workshop,construction,[hall,construction])).
+fact(path(warehouseA,construction,[workshop,hall,construction])).
+fact(path(warehouseB,construction,[workshop,hall,construction])).
+fact(path(hall,workshop,[warehouseA,workshop])).
+fact(path(construction,workshop,[hall,warehouseA,workshop])).
+fact(path(warehouseA,workshop,[hall,workshop])).
+fact(path(warehouseB,workshop,[hall,workshop])).
+fact(warehouses(warehouseA)).
+fact(warehouses(warehouseB)).
+
+goal(ach,complete_tasks,[[]]).
+
+plan(ach,complete_tasks,[carry(_)],[ach(go_to(hall)),act(workshop,drop),act(workshop,go(construction)),ach(complete_tasks)]).
+plan(ach,complete_tasks,[not(carry(_)),not(location(construction))],[ach(go_to(construction)),ach(complete_tasks)]).
+plan(ach,complete_tasks,[not(carry(_)),location(construction),task(Machine2,Material2)],[ach(complete_task(Machine2,Material2)),ach(complete_tasks)]).
+plan(ach,complete_tasks,[],[act(printfg("Apparently no task available")),ach(complete_tasks)]).
+plan(ach,complete_task(Machine,Material),[not(carry(_))],[ach(go_to(hall)),test(product(Machine,Material,_)),act(workshop,pick(Machine,Material)),act(workshop,go(construction)),act(workshop,submit)]).
+plan(ach,complete_task(Machine,Material),[not(carry(_))],[ach(go_to(warehouseA)),test(resource(warehouseA,Material,_)),act(workshop,pick(Material)),act(workshop,go(workshop)),ach(make_product(Machine,Material)),act(workshop,go(hall)),act(workshop,go(construction)),act(workshop,submit)]).
+plan(ach,complete_task(Machine,Material),[not(carry(_))],[ach(go_to(warehouseB)),test(resource(warehouseB,Material,_)),act(workshop,pick(Material)),act(workshop,go(workshop)),ach(make_product(Machine,Material)),act(workshop,go(hall)),act(workshop,go(construction)),act(workshop,submit)]).
+plan(ach,complete_task(_,_),[carry(product(_,_))],[act(printfg("I'm carrying something right now"))]).
+plan(ach,make_product(Machine,Material),[machine(Machine,true)],[act(workshop,do(Machine,Material)),act(printfg("Product manufactured"))]).
+plan(ach,do_walk([]),[],[]).
+plan(ach,do_walk([Location|Locations]),[],[act(workshop,go(Location)),ach(do_walk(Locations))]).
+plan(ach,go_to(Location),[location(Location)],[]).
+plan(ach,go_to(Location),[not(location(Location)),location(Location_Now)],[test(path(Location_Now,Location,Path)),ach(do_walk(Path))]).

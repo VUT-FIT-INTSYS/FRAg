@@ -1,0 +1,25 @@
+MAS worker {
+    infrastructure: Centralised
+    environment: workshop "environments/workshop/workshop.pl" [
+        (resources_rates, [
+            resource(wood, 0.15),
+            resource(plastic, 0.05),
+            resource(metal, 0.12),
+            resource(stone, 0.1),
+            resource(glass, 0.08)
+        ]),
+        (resources_max, 80),
+        (tasks_rate, 0.08),
+        (tasks_max, 110)
+    ]
+    agent_defaults: [
+        (control, terminate(timeout, 1200)),
+        (reasoning, random_reasoning),
+        (environment, workshop)
+    ]
+    agents:
+        workerCL worker.asl [(bindings, late), (reasoning, robin_reasoning), (debug, actdbg)];
+        workerCE worker.asl [(bindings, early), (reasoning, robin_reasoning), (debug, actdbg)];
+        workerL worker.asl [(bindings, late), (debug, actdbg)];
+        workerE worker.asl [(bindings, early), (debug, actdbg)];
+ }

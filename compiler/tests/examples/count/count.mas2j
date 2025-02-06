@@ -1,0 +1,6 @@
+MAS adam {
+    infrastructure: Centralised
+	agents:
+	    count_early count.asl [(bindings, early), (debug, actdbg), (debug,systemdbg)] #5;
+	    count_late count.asl [(bindings, late), (debug, actdbg), (debug,systemdbg)] #10;
+ }

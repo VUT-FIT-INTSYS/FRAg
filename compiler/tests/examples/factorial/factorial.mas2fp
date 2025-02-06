@@ -1,0 +1,1 @@
+load("factorial","<PATH>/factorial",1,[(debug,systemdbg),(debug,reasoningdbg)]).

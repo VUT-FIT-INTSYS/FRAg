@@ -9,7 +9,7 @@
 ).
 
 
-:-use_module('../FRAgPLEnvironmentUtils').   % interface to environments
+:-use_module('../FRAgPLEnvironmentUtils').   % interface for environments
 
 
 

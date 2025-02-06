@@ -36,8 +36,7 @@
 
 /** <module>  FRAg: The Flexible Reasoning Agent
 
-This is the main module of the FRAg system.
-{pldoc link stranta.txt} dalsi stranka
+Main module of the FRAg system.
 
 @author Frantisek Zboril jr.
 @license GPL
@@ -45,7 +44,7 @@ This is the main module of the FRAg system.
 */
 
 
-:- use_module('FRAgBlackboard').
+:- use_module('FRAgSync').
 :- use_module('FRAgAgent').
 
 :- discontiguous frag_choice/1.
@@ -56,8 +55,8 @@ version("0.95").
 
 
 %!  set_bindings(+Binding_Method) is det
-%   Nastavi metodu navazovani promennych
-%  @arg BINDINGS_METHOD: late, early
+%   Sets variable bindings method / strategy
+%  @arg Binding_Method: one from 'late', 'early'
 
 set_bindings(late):-
     fRAgAgent:set_late_bindings.
@@ -68,9 +67,9 @@ set_bindings(early):-
 
 
 %!  get_frag_attributes(+Key, -Value) is det
-%   Returns actual setting of attributes
-%  @arg Key: Attribute name, @see documentation
-%  @arg Value: Attribute value
+%   Returns actual values of attributes
+%  @arg Key: attribute name, @see documentation
+%  @arg Value: attribute value
 
 get_frag_attributes(default_bindings, late):-
     fRAgAgent:is_default_late_bindings.
@@ -101,8 +100,6 @@ get_frag_attributes(environments, Environments):-
 %  @arg Reasoning: intention_selection, plan_selection, substitution_selection, all/
 %  @arg Reasoning_method: one of possible reasoning or a list of three in 
 %   the case of 'all'
-%   Distribution provides: simple_reasoning, random_reasoning, 
-%   biggest_joint_reasoning, snakes_reasoning, mcts_reasoning
 
 set_default_reasoning(intention_selection, Intention_Selection):-
     set_default_intention_selection(Intention_Selection).
@@ -120,31 +117,32 @@ set_default_reasoning(all, Reasoning):-
 
 %!  load_agent(+Agent, +Program, +Attributes, -Thread) is det
 %   Creates thread for Agent, loads Agent's Program  and sets it up
-%  @arg Agent: Agent name
-%  @arg Program: fap program code
+%  @arg Agent: agent name
+%  @arg Program: agent program - 'fap' program file
 %  @arg Attributes: agent attributes @see @tbd
 %  @arg Thread: created thread for the agent
 
 load_agent(Agent, Program, Attributes, Thread):-
     term_string(Agent_Term, Agent),
+    fa_sync:sync_add_agent(Agent_Term),
     thread_create(fa_init_agent(Program, Attributes), Thread,
                   [alias(Agent_Term)]),
     assert(agent(Agent_Term)).
 
 
 
-%!  load_same_agents(+Agent, +Program, +Number, +Attributes, -Threads) is det
-%  @arg Agent: Agent name prefix (names will be Agent1, Agent2 ... AgentNumber)
-%  @arg Program: fap program code
-%  @arg Number: Number of agents to be created
-%  @arg Attributes: Attributes declared for these agents
+%!  load_same_agents(+Agent, +Program, +Number, +Attributes, -Threads) is nondet
+%  @arg Agent: agent name prefix (names will be Agent1, Agent2 ... AgentNumber)
+%  @arg Program: agent program - 'fap' program file
+%  @arg Number: number of agents to be created
+%  @arg Attributes: attributes declared for these agents
 %  @arg Threads: created Threads for the agents
 
 load_same_agents(_, _, 0, _, []).
 
-load_same_agents(Agent, Program, Number, Attributes, [THREAD| THT]):-
+load_same_agents(Agent, Program, Number, Attributes, [Thread| THT]):-
     concat(Agent, Number, AGENTNAME),
-    load_agent(AGENTNAME, Program, Attributes, THREAD),
+    load_agent(AGENTNAME, Program, Attributes, Thread),
     Number2 is Number - 1,
     load_same_agents(Agent, Program, Number2, Attributes, THT).
 
@@ -155,7 +153,7 @@ load_same_agents(Agent, Program, Number, Attributes, [THREAD| THT]):-
 %   sets Attributes for each agent type
 %  @arg Agent_To_Load: load(Agent, Program, Number, Attributes) where Agent is
 %   agent 'root' name, Number is number of agents that should be created from 
-%   given Program - then the names contains indexec from 1 to Number, and 
+%   given Program - then the names contains indexes from 1 to Number, and 
 %   Attributes are attribudes specified for the agent type
 %  @Agent_Threads: List of threads of each created agent
 
@@ -191,7 +189,7 @@ frag_process_attributes([(Key, Value)| Attributes]):-
 %!  set_default_attribute(+Key, +Value) is det
 %   Sets attributes of the multiagent system. These settings are default
 %   to agents and can be changed for individual agents in the agent
-%   introducting clauses @see multiagent frag file
+%   declaration clauses @see multiagent frag file
 %  @arg Key: attribute name
 %  @arg Value: attribute value
 %  @see documentation for the mas2fp file format
@@ -229,16 +227,17 @@ frag(Filename):-
     !,
     open(Absolute_Mas2FP, read, Stream, [close_on_abort(true)]),
     thread_setconcurrency(_ , 1000),
-% loads initial multiagent system.
     load_multiagent(Stream, Agents),
     !,
     close(Stream),
+    fa_sync:sync_init,
     load_agents(Agents, Threads),
+    fa_sync:sync_agents_ready,
     !,
-    wait_agents(Threads),
-    % run (unblock) agents
-    assert(go(1)),
-    wait_agents(Threads),
+%    wait_agents(Threads),
+%    run (unblock) agents
+%    assert(go(1)),
+%    wait_agents(Threads),
     join_threads(Threads).
 
 frag(Filename):-
@@ -273,8 +272,8 @@ frag_process_clause(_ , end_of_file, []):-
 
 %  sets environment's attribute
 
-frag_process_clause(Stream, set_environment(Environment, Attributes), Clauses):-
-    fRAgAgent:set_environment_attributes(Environment, Attributes),
+frag_process_clause(Stream, set_environment(Environment, Parameters), Clauses):-
+    fRAgAgent:set_environment_parameters(Environment, Parameters),
     !,
     load_multiagent(Stream, Clauses).
 
@@ -333,7 +332,7 @@ frag_process_clause(Stream, Clause, Clauses):-
 wait_agents([]).		% no agents loaded
 
 wait_agents(Threads):-
-    bagof(Agent, ready(Agent), Agents_Ready),
+    bagof(Agent, fa_sync:ready(Agent), Agents_Ready),
     length(Agents_Ready, Agents_Ready_Length),
     length(Threads, Agents_Ready_Length),
     retractall(ready( _ )).
@@ -392,7 +391,7 @@ frag_choice(50,52):-
     frag.
 
 frag_choice(50,53):-
-    set_default_reasoning(plan_selection, can_reasoning),
+    set_default_reasoning(plan_selection, robin_reasoning),
     frag.
 
 frag_choice(50):-
@@ -403,7 +402,7 @@ frag_choice(50):-
     writeln("2, simple reasoning"),
     writeln("3, random reasoning"),
     writeln("4, biggest joint (for intention selection only)"),
-    writeln("5, can reasoning (for plan selection only)"),
+    writeln("5, round robin reasoning (for plan selection only)"),
     get_single_char(Choince),
     frag_choice(50, Choince).
 
@@ -471,11 +470,15 @@ join_threads([Thread| Threads]):-
 %   parameters
 
 main_frag:-
+    set_prolog_stack(global, limit(8 000 000 000)),
+    set_prolog_stack(trail, limit(5 000 000 000)),
+    set_prolog_stack(local, limit(5 000 000 000)),
+		
     nl,
     version(Version),
     format(
-"FRAg version ~w, 2021 - 2024, by Frantisek Zboril & Frantisek Vidensky,
-Brno University of Technology~n~n",
+'FRAg version ~w, 2021 - 2024, by Frantisek Zboril & Frantisek Vidensky,
+Brno University of Technology ~n~n',
 	   [Version]),
     frag('fraginit'),
     !,
@@ -483,8 +486,8 @@ Brno University of Technology~n~n",
     get_frag_attributes(reasonings, [Intention_Selection, Plan_Selection,
 	                Substitution_selection]),
     get_default_environments(Environments),
-    format("-> Bindings: ~w~n-> Intention selection: ~w ~n-> Plan selection: ~w
--> Substitution selection: ~w ~n-> Environments: ~w ~n~n",
+    format('-> Bindings: ~w~n-> Intention selection: ~w ~n-> Plan selection: ~w
+-> Substitution selection: ~w ~n-> Environments: ~w ~n~n',
 	   [Bindings, Intention_Selection, Plan_Selection,
             Substitution_selection, Environments]).
 
@@ -497,3 +500,6 @@ Brno University of Technology~n~n",
 make_documentation:-
     use_module(library(pldoc/doc_library)),
     doc_save('FragPL.pl',[format(html), recursive(true), doc_root(doc)]).
+
+
+        

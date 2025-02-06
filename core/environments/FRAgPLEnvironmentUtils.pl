@@ -2,7 +2,6 @@
 :-module(env_utils,
     [
         register_environment /1,
-        register_clone /2,   % nutne??
         clone_environment /2,
 	environment_registered /2,
         situate_agent_environment /2,
@@ -12,7 +11,9 @@
         situated_number /3,
 	reset_environment_clone /2,
 	remove_environment_clone /2,
+        query_environment /2,
         query_environment /3,
+        findall_environment_template /4,
         findall_environment /4,
         add_beliefs /2,
 	add_beliefs_agents /2,
@@ -22,6 +23,7 @@
         add_facts_agent /3,
         add_facts_beliefs /3,	
         add_facts_beliefs_all /3,
+	delete_facts /2,
 	delete_beliefs /2,
         delete_beliefs_agents /2,
 	delete_beliefs_all /2,
@@ -38,10 +40,10 @@
 
 /** <module>  Environments Supporting Clauses 
 
-Work with instances, facts, beliefs, agents
+Work with environment instances, facts, beliefs, agents
  
 
-@author Frantisek Zboril
+@author Frantisek Zboril 2023 - 2024
 @license GPL
 */
 
@@ -52,9 +54,9 @@ Work with instances, facts, beliefs, agents
 :-dynamic fact/4.
 :-dynamic episode_list /1.
 
-:-dynamic add/2.
-:-dynamic delete/2.
-:-dynamic environment /2.    % Registered environment / clone
+:-dynamic add/2.              % addlist for agents' beliefs update
+:-dynamic delete/2.           % deletelist for agents' belief update
+:-dynamic environment /2.     % Registered environment / clone
 :-dynamic situated_agent /3.  % Agents in this environment or clone
 
 
@@ -63,7 +65,7 @@ episode_list([]).
 
 
 %!  register_environment(Environment) is det
-%   Registers Environment or Clone of the Environment. System can tnen use 
+%   Registers Environment or Clone of the Environment. System can then use 
 %   Environment and or Clone of Environment, if these two names differs. 
 %  @arg Environment: environment name
 
@@ -74,26 +76,25 @@ register_environment(Environment):-
     assert(environment(Environment, Environment)).
 
 
-% not exported
-
-register_clone(Environment, Clone):-
-    environment(Environment, Clone). % already registered
-
-register_clone(Environment, Clone):-
-    assert(environment(Environment, Clone)).
-
-
 
 %!  clone_environment(Environment, Clone) is det
-%   Makes clone of Environment, for every fact(Environment, Environment, Fact),
-%   creates clone fact(Environment, Clone, Fact),
-%  @arg Environment: environment name
+%   Makes clone of Environment, registers it, and creates clone fact for every 
+%   fact(Environment, Environment, Fact) -> fact(Environment, Clone, Fact)
+%  @arg Environment: name of environment, for which a clone is being created
 %  @arg Clone: clone name
 
 clone_environment(Environment, Clone):-
     register_clone(Environment, Clone),
     findall(Fact, fact(Environment, Environment, Fact), Facts),
     add_facts_clone(Environment, Clone, Facts).
+
+
+register_clone(Environment, Clone):-
+    environment(Environment, Clone). 		% already registered
+
+register_clone(Environment, Clone):-
+    assert(environment(Environment, Clone)).
+
 
 
 
@@ -104,6 +105,8 @@ clone_environment(Environment, Clone):-
 
 remove_environment_clone(Environment, Clone):-
     retractall(fact(Environment, Clone, _)),
+    retractall(add(Clone, _)),
+    retractall(delete(Clone, _)),
     retractall(situated_agent(_, Environment, Clone)).
 
 
@@ -121,7 +124,7 @@ environment_registered(Environment, Clone):-
 %!  situate_agents_clone(+Agents, +Environment, +Clone) is det
 %   Situates Agent in Environment, if Clone differs from Environment, then
 %   the agent is virtual and interacts with Environment's Clone
-%  @arg Agent: list of agent names / identifier 
+%  @arg Agent: list of agent names / identifiers 
 %  @arg Environment: name of environment
 %  @arg Clone: a possible clone of Environment
 
@@ -209,17 +212,26 @@ findall_facts(_, _, []).
 
 
 %!  query_environment(+Environment, +Agent, +Query) is det
-%   Queries given Environment or its clone where Agent is situated 
+%   Gives Query to given Environment or its clone where Agent is situated 
 %  @arg Environment: which Environment 
 %  @arg Agent: agent name / identifier 
 %  @arg Query: query to Environment or its clone where Agent is situated
 
 query_environment(Environment, Agent, Query):-
-    get_clone_query(Environment, Agent, Query, Clone_Query),
-    Clone_Query.
+   get_clone_query(Environment, Agent, Query, Clone_Query),
+   !,
+   Clone_Query.
 
 query_environment(Environment, Agent, Query):-
     situated_agent(Agent, Environment, Environment),
+    fact(Environment, Environment, Query).
+
+%!  query_environment(+Environment, +Query) is det
+%   Gives Query to original instance of Environment  
+%  @arg Environment: which Environment 
+%  @arg Query: query to original instance of Environment 
+
+query_environment(Environment, Query):-
     fact(Environment, Environment, Query).
 
 
@@ -238,31 +250,47 @@ findall_environment(Environment, Agent, Query, Answers):-
     findall(Query, fact(Environment, Clone, Query), Answers).
 
 
+
+%!  findall_environment(+Environment, +Template, +Query, -Answers) is det
+%   Finds all the answers for Query in original instance of Environment 
+%  @arg Environment: which Environment 
+%  @arg Query: query to Environment or its clone where Agent is situated
+%  @arg Answers: answers to Query from Environment / Clone where the Agent is
+   
+
+findall_environment_template(Environment, Template, Query, Answers):-
+    findall(Template, fact(Environment, Environment, Query), Answers).
+
+
+
 %
 %	ADD and DELETE lists for agents
 % 
 
 
 %  Prepare Facts for agent's Add list
-%  If there is equal Fact in Agent's Delete list -> removes it
-%  Else it add the belief to the Agent's Add list.
-%  add_belief(+Agent, +Facts)
+%  This is basic version. Could be extended, as delete list is processed first
+%  to remove delete ground atom when the same atom is in add list (TODO)
+%  + also some work with generalizaton and specification of the space that 
+%  non ground atoms represents - unnecessary for this version of FRAg
 
+/*
 add_belief(Agent, Belief):-
-    delete(Agent, Belief),    % in Agent's delete list
+    ground(Belief),
+    delete(Agent, Belief),    
     retract(delete(Agent, Belief)).
+*/
 
 add_belief(Agent, Belief):-
     assert(add(Agent, Belief)).
 
-%  Prepare Facts for agent's Delete list
-%  If there is equal Fact in Agent's Add list -> remove it
-%  Else it add the belief to the Agent's Delete list.
-%  add_belief(+Agent, +Facts)
+/*
 
 delete_belief(Agent, Belief):-
+    ground(Belief),		
     add(Agent, Belief),
     retract(add(Agent, Belief)).
+*/
 
 delete_belief(Agent, Belief):-
     assert(delete(Agent, Belief)).
@@ -274,7 +302,7 @@ delete_belief(Agent, Belief):-
 %  @arg Agent: agent name / identifier 
 %  @arg Beliefs: list of atoms or formulas
 
-add_beliefs(_, []).
+add_beliefs( _ , []).
 
 add_beliefs(Agent, [Belief| Beliefs]):-
     add_belief(Agent, Belief),
@@ -288,7 +316,7 @@ add_beliefs(Agent, [Belief| Beliefs]):-
 %  @arg Agents: list of agents names / identifiers 
 %  @arg Beliefs: list of atoms or formulas
 
-add_beliefs_agents([], _).
+add_beliefs_agents([], _ ).
 
 add_beliefs_agents([Agent| Agents], Beliefs):-
     add_beliefs(Agent, Beliefs),
@@ -316,7 +344,7 @@ add_beliefs_all(Agent, Beliefs):-
 %  @arg Agent: agent name / identifier 
 %  @arg Facts: list of atoms or formulas
 
-add_facts_agent(_, _, []).
+add_facts_agent( _, _, []).
 
 add_facts_agent(Environment, Agent, [Fact| Facts]):-
     get_clone_query(Environment, Agent, Fact, Clone_Fact),
@@ -360,13 +388,13 @@ add_facts_clone(Environment, Instance, [Fact| Facts]):-
 
 
 
-%!  add_facts_beliefs(+Environment, +Agent, +Beliefs) is det
-%Add Beliefs to the Environment or its clone where Agent is
-%and also process agent's add/delete lists. If belief to be added is in delete
-%list, it is removed from it, else it is added to agent's add list
-%* Environment: environment name
-%* Agent: agent name
-%* Beliefs: list of atoms
+%  !add_facts_beliefs(+Environment, +Agent, +Beliefs) is det
+%   Add Beliefs to the Environment or its clone where Agent is
+%   and also process agent's add/delete lists. If belief to be added is in
+%   delete list, it is removed from it, else it is added to agent's add list
+%  @arg Environment: environment name
+%  @arg Agent: agent name
+%  @arg Beliefs: list of atoms
 
 
 add_facts_beliefs(_, _, []).
@@ -375,21 +403,41 @@ add_facts_beliefs(Environment, Agent, Beliefs):-
     add_facts_agent(Environment, Agent, Beliefs),
     add_beliefs(Agent, Beliefs).
 
-%!  add_facts_beliefs_all(+Environment, +Agent, +Beliefs) is det
-%Add Beliefs to the Environment or its clone where Agent is
-%and also process add/delete lists for all the agents in  Environent instance
-%If belief to be added is in delete list, it is removed from it, else it is 
-%added to agent's add list
+
+%  !add_facts_beliefs_all(+Environment, +Agent, +Beliefs) is det
+%   Add Beliefs to the Environment or its clone where Agent is
+%   and also process add/delete lists for all the agents in  Environent 
+%   instance. If belief to be added is in delete list, it is removed from it, 
+%   else it is added to agent's add list
 %  @arg Environment: environment name
 %  @arg Agent: agent name
 %  @arg Beliefs: list of atoms
 
 
-add_facts_beliefs_all(_, _, []).
+add_facts_beliefs_all( _, _, []).
 
 add_facts_beliefs_all(Environment, Agent, Beliefs):-
     add_facts_agent(Environment, Agent, Beliefs),
     add_beliefs_all(Agent, Beliefs).
+
+
+%!  delete_facts(+Environment, +Facts) is det
+%   Deletes facts from Environment's original instantion
+%  @arg Environment: environment name
+%  @arg Facts: list of atoms or formulas
+
+delete_facts( _, []).
+
+delete_facts(Environment, [Fact| Facts]):-
+    delete_fact(fact(Environment, Environment, Fact)),
+    delete_facts(Environment, Facts).
+
+
+delete_fac(Fact):-
+    not(Fact).
+
+delete_fact(Fact):-
+    retractall(Fact).
 
 
 
@@ -446,22 +494,24 @@ delete_facts_agent(_, _, []).
 
 delete_facts_agent(Environment, Agent, [Fact| Facts]):-
     get_clone_query(Environment, Agent, Fact, Clone_Fact),
-    try_retract(Clone_Fact),
+%   format("tr1 ~w ~n",Clone_Fact),
+    try_retract_env(Clone_Fact),
     delete_facts_agent(Environment, Agent, Facts).
 
 delete_facts_agent(Environment, Agent, [Belief| Beliefs]):-
-    try_retract(fact(Environment, Environment, Belief)),
+%    format("tr2~n"),
+    try_retract_env(fact(Environment, Environment, Belief)),
     delete_facts_agent(Environment, Agent, Beliefs).
 
 
-try_retract(Clone_Fact):-
+try_retract_env(Clone_Fact):-
     retract(Clone_Fact).
 
-try_retract(Clone_Fact):-
+try_retract_env(Clone_Fact):-
     format("[ERROR] retracting ~w failed~n", [Clone_Fact]).
 
 
-
+                        
 %!  delete_facts_beliefs(+Environment, +Agent, +Beliefs) is det
 %   Delete the beliefs to the Environment or its clone where Agent is
 %   and also process agent's add/delete lists. If belief to be deleted is in add
@@ -497,7 +547,7 @@ delete_facts_beliefs_all(Environment, Agent, Beliefs):-
 
 
 %!  retreive_add_delete(+Agent, -Add_List, -Delete_List) is det
-%   Provides add/delete lists for Agent 
+%   Provides add/delete lists for specified Agent 
 %  @arg Agent: agent name
 %  @arg Add_List: new percepts
 %  @arg Delete_List: lost percepts
@@ -577,7 +627,7 @@ load_environment_instance_state(Environment, Instance, State):-
     findall(Fact, 
             fact(Environment, Instance, State, Fact), 
             Facts2),
-    add_facts_beliefs_all(Environment, Agent, Facts2).
+    add_facts_clone(Environment, Instance, Facts2).
 
 
 
@@ -588,18 +638,14 @@ load_environment_instance_state(Environment, Instance, State):-
 %  @arg State
 
 remove_environment_instance_state(Environment, Instance, State):-
-    retractall(fact(Environment, Instance, State, _)).
+    retractall(fact(Environment, Instance, State, _)),
+    garbage_collect.
 
 md:-
     use_module(library(pldoc/doc_library)),
  %   doc_load_library,
     doc_save('FRAgPLEnvironmentUtils.pl',[format(html), recursive(true), 
                                           doc_root('../../doc')]).
-
-
-
-
-
 
 
                                                   

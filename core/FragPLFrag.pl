@@ -1,5 +1,6 @@
 
 /**
+
 This file is part of the FRAg program. It is insluded into agent's file 
 FRAgAgent.pl. Contains clauses that are specific to the late variable binding 
 system when interpreting agent code.
@@ -7,14 +8,14 @@ system when interpreting agent code.
 @author Frantisek Zboril
 @version 2021 - 2024
 @license GPL
+
 */
-
-
 
 
 
 % reasoning - plan selection + substitution selection (decide op.) + intention
 % selection
+
 :-thread_local active_intention_selection /1.
 :-thread_local active_plan_selection /1.
 :-thread_local active_substitution_selection /1.
@@ -172,10 +173,11 @@ get_default_reasoning(Intention_Selection, Plan_Selection,
 %                                                                              |
 %===============================================================================
 
+
+
 %!  update_models is det
 %   
 %   
-
 
 update_models:-
     active_intention_selection(Intention_Selection),
@@ -210,7 +212,7 @@ get_intention(Intentions, intention(Intention_ID, Context, Plan_Stack)):-
 % intention(INTENTIONINDEX, CONTEXT, PLANSTACK2),
     loop_number(Loop),
     format(atom(String),
-           "[RSNDBG] GET INTENTION [~w / ~w] -> ~w~n",
+           "~n[RSNDBG] GET INTENTION [~w / ~w] -> ~w~n",
            [Loop, Intention_Selection,
                intention(Intention_ID, Context, Plan_Stack)]),
     print_debug(String, reasoningdbg).
@@ -222,7 +224,7 @@ get_intended_means(Means, Event, Intended_Means):-
     get_plan(Plan_Selection, Event, Means, Intended_Means),
     loop_number(Loop),
     format(atom(String),
-           "[RSNDBG] GET PLAN [~w / ~w] -> FOR ~w ~n[......] -> PLAN ~w~n",
+           "~n[RSNDBG] GET PLAN [~w / ~w] -> FOR ~w ~n[......] -> PLAN ~w~n",
 		   [Loop, Plan_Selection, Event, Intended_Means]),
     print_debug(String, reasoningdbg).
 
@@ -242,6 +244,7 @@ get_intended_means(Means, Event, Intended_Means):-
 %===============================================================================
 
 
+
 %!  broad_unification(+Atom, +Atoms, -PUS_Out) is det
 %  @arg Atom: query to a base
 %  @arg Atoms: the base
@@ -249,11 +252,9 @@ get_intended_means(Means, Event, Intended_Means):-
 %   Performs broad unification of Atom in Atoms (Belief base). Resulti is
 %   a set of substitutions in PUS_Out
 
-
 broad_unification(Atom, Atoms, PUS_Out):-
     broad_unification2(Atom, Atoms, PUS),
     sort(PUS, PUS_Out).
-
 
 
 broad_unification2(_ ,[], []).
@@ -269,6 +270,7 @@ broad_unification2(Atom1, [Atom2| Atoms], [Substitution_Out| Substitutions])
 
 broad_unification2(Atom, [_ | Atoms], Substitutions):-
     broad_unification2(Atom, Atoms, Substitutions).
+
 
 
 %!  remove_renamings(+Bindings_In, -Bindings_Out) is det
@@ -311,12 +313,12 @@ apply_substitutions([Binding| Bindings]):-
     apply_substitutions(Bindings).
 
 
+
 %!  restriction(+Substitutions1, +Substitutions2, -Substitutions_Out) is det
 %
-%  @arg
-%  @arg
-%  @arg
-
+%  @arg Substitutions1
+%  @arg Substitutions2
+%  @arg Substitutions_Out
 
 restriction([[]],[[]],[[]]).    % empty PUS's restriction
 
@@ -335,6 +337,8 @@ restriction2(Substitution1, [Substitution2| Substitutions], PUS_Out):-
     merging(Substitution1, Substitution2, Substitution3),
     restriction2(Substitution1, Substitutions, PUS1),
     append_not_empty([Substitution3], PUS1, PUS_Out).
+
+
 
 %!  merging()
 %	MERGING
@@ -373,17 +377,16 @@ merging3([_| Bindings], Bind):-
     merging3(Bindings, Bind).
 
 
+
 %!
-% appends two PUSs, but when one contains just one empty substitution,
-% this empty is not appended to another (is ignored)
+%   appends two PUSs, but when one contains just one empty substitution,
+%   this empty is not appended to another (is ignored)
 
 append_not_empty([[]], List, List).
 
 append_not_empty(List, [[]], List).
 
 append_not_empty(List1, List2, List3) :- append(List1, List2, List3).
-
-
 
 
 %
@@ -408,12 +411,12 @@ memberVar(Bind, [_| Bindings]):- memberVar(Bind, Bindings).
 
 
 % ! shorting(+Goal1, +Goal2, +PUS1, +Vars1, -PUS2, -Vars2) is det
-%* Goal1 vstupni cil
-%* Goal2 vystupni cil
-%* PUS1
-%* Vars1
-%* PUS2
-%* Vars2
+%  @arg Goal1 vstupni cil
+%  @arg Goal2 vystupni cil
+%  @arg PUS1
+%  @arg Vars1
+%  @arg PUS2
+%  @arg Vars2
 %
 % vstupnicl -> vystupnicil
 %, ten samy cil ale s radne prejmenovanymi promennymi
@@ -427,14 +430,15 @@ shorting(Goal1, Goal2, PUS_In, Vars_In, PUS_Out, Vars_Out):-
     shorting_pus(PUS_In, Vars_In, PUS1),
 % pokud je vystup [[],[],....] udelame z nej pouze [[]]
     set_empty_PUS(PUS1, PUS2),
-% musime prejmenovat, abychom ziskali 'fresh' jmena promennych
+% must rename to get fresh variable names
     copy_term([Goal1, PUS2],[Goal2, PUS_Out]),
 % a vezmem jen promenne, ktere jsou v novem PUS  (promennych bylo vic,
 % nez bylo ve vstupnim PUS) shorting [[A=a],[B=b]],[A,C] ->  [[A=a]],[A]
     term_variables(PUS_Out, Vars_Out).
 
 
-%!  shorting(Substitutions_In,Var_List, Substitutions_Out) is det
+
+%!  shorting(Substitutions_In, Var_List, Substitutions_Out) is det
 %   basic shorting: substitution x list of variables -> substitutions just
 %   for these variables
 
@@ -448,6 +452,9 @@ shorting_pus([H1|T1],V,[H2|T2]):-
     shorting_pus(T1,V,T2).
 
 
+
+%!  shorting(+Substitution, +Variables, -Substitution) is ...?
+% TODO ASAP
 
 %   empty context remains empty context
 shorting([], _, []).
@@ -466,14 +473,14 @@ shorting([_| Bindings], Variables, Bindings2):-
 
 
 %
-%   After execution PUS may include weird tubles constant=constant even for a
+%   After execution PUS may include weird tuples constant=constant even for a
 %   pair with distinc constants these should be reducet, or better PUS should 
 %   be reduced only to those mapping variables to a term
 %	shortNoVars(PUS, PUS).
 %
 
 
-short_variables_binds2([],_,[]).
+short_variables_binds2([], _, []).
 
 short_variables_binds2([Substitution| Substitutions], Variables, [PUS| PUSs]):-
     shorting(Substitution, Variables, PUS),
@@ -483,8 +490,6 @@ short_variables_binds([Substitution| Substitutions], PUSs):-
     term_variables(Substitution, Variables),
     short_variables_binds2([Substitution| Substitutions], Variables, PUS),
     sort(PUS, PUSs).
-
-
 
 
 
@@ -500,6 +505,7 @@ intersection(Goal_Atom1, PUS1, Goal_Atom2, PUS2):-
     broad_unification(Goal_Atom2, Instance_Set1, Answers),
     term_variables(Goal_Atom2, Goal_Atom2_Variables),
     shorting_pus(Answers, Goal_Atom2_Variables, PUS2).
+
 
 
 %!  intersection(+Atom1, +Context1, +Atom2, +Context2, -Context_Out) is det
@@ -522,8 +528,7 @@ intersection(Goal_Atom1, Context1, Goal_Atom2, Context2, Context_Out):-
 %  @arg Atom:
 %  @arg Context_In:
 %  @arg Variables:
-%  @arg Context_Out:
-%    
+%  @arg Context_Out:    
 
 decide_context( _, _, [], []).		% no vars / nothing to decide
 
@@ -535,13 +540,14 @@ decide_context(Atom, Context, Variables, Context2):-
                      Context2),
     loop_number(Loop),
     format(atom(String),
-           "[RSNDBG] GET DECISION [~w / ~w] ->~n[......] FOR ~w ~w
-[......] DECISION -> ~w~n",
+           'GET DECISION [~w / ~w] ->~n[......] FOR ~w ~w
+[......] DECISION -> ~w~n',
 		   [Loop, Substitution_Selection, Atom, Context, Context2]),
 	print_debug(String, reasoningdbg).
 
 
-%!  decidioning(+Action_Term, +Context, -Context_Out) is nondet
+
+%!  decisioning(+Action_Term, +Context, -Context_Out) is nondet
 %   Takes the first PUS from the context / simple reasoning
 %   selects one substitution from the context due to requestet variebles
 %   'to ground' all the substitutions in the context must soud to the variables
@@ -553,12 +559,16 @@ decide_context(Atom, Context, Variables, Context2):-
 %   uses reasoning method due to active_reasoning_method(-Method)
 %
 
-decisioning(Action_Term, Context, Context_Out):-
+decisioning(Action_Term, Context, Context_Out, Apply):-
     term_variables(Action_Term, Action_Variables),
     decide_context(Action_Term, Context, Action_Variables, Context2),
     restriction(Context, [Context2], Context_Out),
-    apply_substitutions(Context2).
+    do_apply(Apply, Context2).
 
+do_apply(false, _).
+
+do_apply(true, Context):-
+    apply_substitutions(Context).
 
 
 
@@ -566,59 +576,78 @@ decisioning(Action_Term, Context, Context_Out):-
 %	Queries
 %
 
-%!   simulate_early_bindings(+Atom, +Context_In, -Context_Out) is nondet
-%   @arg Atom:
-%   @arg Context_In:
-%   @arg Context_Out:
-%    If Context_In is non-empty and the early binding strategy is active, it 
-%    decides how the free variables in the Atom should be bound. It selects one
-%    of the substrings from Context_In and modifies the context on Context_Out
-%    to respect the chosen bindings.
+%!  simulate_early_bindings(+Atom, +Context_In, -Context_Out, 
+%			    +Late, +Apply) is nondet
+%   If Context_In is non-empty and the early binding strategy is active, it 
+%   decides how the free variables in the Atom will be bound. It selects one
+%   of the substrings from Context_In and modifies the context on Context_Out
+%   to respect the chosen bindings.
+%  @arg Atom: input Atom
+%  @arg Context_In: input Context
+%  @arg Late: true / false -> early / late bindings
+%  @arg Context_Out: output Context
+%  @arg Apply: apply substituions, instantiate variables
 
-simulate_early_bindings( _, [], []).
+% simulate_early_bindings( _, [], []).
 
 %   late bindings are set, so do not simulate early bindings
-simulate_early_bindings( _, Context, Context):-
-    late_bindings(true).
 
-simulate_early_bindings(Act_Atom, Context_In, Context_Out):-
-    decisioning(Act_Atom, Context_In, Context_Out).
+simulate_early_bindings( _, Context, Context, true, _).
+
+
+%   already failed
+simulate_early_bindings( _, [], [], _, _).
+
+
+simulate_early_bindings(Act_Atom, Context_In, Context_Out, false, Apply):-
+    decisioning(Act_Atom, Context_In, Context_Out, Apply).
+
+
+
+% with no explicit bindings setting 
+
+query(Query, Context, Context_Out):-
+   late_bindings(Bindings),
+   query(Query, Context, Context_Out, Bindings).
 
 
 %!  query(+Query, +Context, -Context_Out).
 %   Queries agent's base by literal Query
-%  @arg Query
-%  @arg Context
-%  @arg Context_Out
+%  @arg Query: query literal (Atom od not(Atom))
+%  @arg Context: query input context
+%  @arg Context_Out: query output context, empty list if query failed
 
+%  negative literal
 
-%  negative query
-
-query(not(Query), Context, Context_Out):-
-    %  writeln(query(not(QUERY), CONTEXT, CONTEXTOUT)),
-    query(Query, Context, Context1),
-% not published yet ... query succeeded, but may be just for some contextes ...
+query(not(Query), Context, Context_Out, Bindings):-
+    query(Query, Context, Context1, Bindings),
+%  remove all supersets of some element from Context1 
     substract_subsubstitions(Context, Context1, Context_Out).
 
-query(not( _ ), Context, Context).   % query to QUERY failed (no answer)
+query(not( _ ), Context, Context, _).   % query to QUERY failed (no answer)
 
-query(Query, Context, Context_Out):-
+
+%  positive literal
+
+query(Query, Context, Context_Out, Bindings):-
     bagof(fact(Query), fact(Query), Answers),
+% get list of subsitutions for fact(Query) and Answers
     broad_unification(fact(Query), Answers, Context2),
-    simulate_early_bindings(Query, Context2, Context3),
-    restriction(Context, Context3, Context_Out).
+% in the case of early bindings, chose on subsitution from Context2
+    restriction(Context, Context2, Context3),
+    simulate_early_bindings(Query, Context3, Context_Out, Bindings, false).
 
-query( _, _, []).
+query( _, _, [], _).
 
 
 
-% ! substract_subsets(+Substitutions1, +Substitutions2, 
+%!  substract_subsubstitions(+Substitutions1, +Substitutions2, 
 %                     -Substitutions_Out) is det
-%  @arg Substitutions1:
-%  @arg Substitutions2:
-%  @arg Substitutions_Out:
 %   Removes every substitution from Substitutions1 that is a subset of some
 %   substitution from Substitutions2
+%  @arg Substitutions1: Input substitutions (to be reduced)
+%  @arg Substitutions2: Substitutions which supersets should be removed
+%  @arg Substitutions_Out: Output substitutions
 
 substract_subsubstitions(Substitutions, [], Substitutions).
 
@@ -647,13 +676,11 @@ substract_subsubstitions2([Substitution1 | Substitutions1], Substitution2,
                               Substitutions_Out).
 
 
-
 subsubstitution([], _).
 
 subsubstitution(Substitution, [Binding | Bindings]):-
     delete_binding(Substitution, Binding, Substitution2),
     subsubstitution(Substitution2, Bindings).
-
 
 
 delete_binding([], _, []).

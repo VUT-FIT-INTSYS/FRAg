@@ -1,0 +1,45 @@
+
+
+
+
+
+
+goal(ach,go,[[]]).
+
+
+plan(ach, go, [task(Stone1, Stone2, Stone3)],
+	[
+         ach(get_stone(Stone1)),
+         ach(get_stone(Stone2)),
+         ach(get_stone(Stone3)),
+	 tlg(go)
+        ]
+    ).
+
+
+plan(ach, get_stone(Stone), [item( _, Stone, _)],
+	[
+	  act(task_maze, pick)
+	]
+     ).
+
+
+
+plan(ach, get_stone(Stone), [door(Direction, Stone)], 
+	[
+          act(task_maze, go(Direction)),
+          act(task_maze, pick)
+	]
+    ).                   
+
+
+plan(ach, get_stone(Stone), [door(Direction, _)],
+	[
+          act(task_maze, go(Direction)),
+	  ach(get_stone(Stone))
+	]
+    ).       
+            
+                                                          
+
+

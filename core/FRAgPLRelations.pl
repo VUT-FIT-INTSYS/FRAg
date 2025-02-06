@@ -38,10 +38,10 @@ membervo(_,_).
 %   Prolog form 'A is B' either a relation (comparsion) defined in FRAg. 
 %   Result of execution is stored in Operation_Result. For other than 'thre'
 %   result see documentation to 'aloprel' below
-%  @arg Operation
-%  @arg Context_In
-%  @arg Context_Out
-%  @arg Result:
+%  @arg Operation: operation atom
+%  @arg Context_In: input context
+%  @arg Context_Out: output context (after operation executed)
+%  @arg Result: true / false / term
 
 alop(_ is _,[],[], true).
 

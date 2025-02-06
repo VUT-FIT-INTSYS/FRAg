@@ -11,7 +11,7 @@
 
 /**
 @Author Frantisek Zboril jr.
-@version 0.5 (2023) 
+@version 0.9 (2024) 
 */
 
 
@@ -46,7 +46,7 @@ time_adjust_multiply(30).
 
 
 :-use_module('../FRAgPLEnvironmentUtils').   % interface to environments
-:-use_module('stat_utils').
+:-use_module('../FRAgPLStatsUtils').
 
 
 episode(1).
@@ -87,6 +87,13 @@ episode_length(0.01). % in secs
 previous_time(-1).
 
 
+%===============================================================================
+%                                                                              |
+%    CARD SHOP INITALIZATION, CLONE MANAGEMENT AND SITING AGEBTS               |
+%                                                                              |
+%===============================================================================
+
+
 %!  init_beliefs(+Agents)
 %   Inserts beliefs has / price / sells to Agents
 %  @arg Agents: List of agents for which beliefs should be initialized
@@ -101,7 +108,7 @@ init_beliefs(Agents):-
     add_beliefs_agents(Agents, [episode(1)]).
                   
 
-%!  card_shop(++Functionality, +Attributes) is det 
+%!  card_shop(++Functionality, +Parameters) is det 
 %  @arg Functionality is one of 
 %*      set_parameters 
 %*      add_agent
@@ -109,7 +116,7 @@ init_beliefs(Agents):-
 %*      reset_clone
 %*      remove_clone
 %  @arg Attributes: List of parameters in the form of tuples
-%   1. For functionality 'set_attributes' the attributes can be
+%   1. For functionality 'set_attributes' the parameters can be
 %*      (products, [Number, Mean_Price, Dispersion])
 %*      (b_lambda, Mean) 
 %*      (s_lambda, Mean)
@@ -123,11 +130,11 @@ init_beliefs(Agents):-
 %   2. For functionality 'add_agant' the parameter is agent's name
 
 
-card_shop(set_attributes, []).
+card_shop(set_parameters, []).
 
-card_shop(set_attributes, [(Key, Value)| Attributes]):-
+card_shop(set_parameters, [(Key, Value)| Attributes]):-
     set_parameter(Key, Value),
-    card_shop(set_attributes, Attributes).
+    card_shop(set_parameters, Attributes).
 
 
 
@@ -169,7 +176,7 @@ set_parameter(episoding, (real_time, Time)):-
     change_params(episode_mode(Time)).
 
 set_parameter( _, _):-
-    format("[ERROR] card shop, wrong parameters").   
+    format("[ERROR] card shop, wrong parameters!~n").   
 
 
 
@@ -185,7 +192,8 @@ change_params(Atom):-
 
 %!  generate_products(+Number, +Mean_Price, +Dispersion) is det
 %   Generates Number of CDs with prices ~N(Mean_Prixe, Dispersion) truncates
-%   to tens
+%   to tens. This is done when (products, [Number, Mean, Dispersion]) parameter
+%   is set from agent's metafile.
 %  @arg Number: Number of products to be generated
 %  @arg Mean_Price:
 %  @arg Dispersion:
@@ -210,14 +218,16 @@ generate_products(Number, Mean, Dispersion):-
 
 card_shop(add_agent, Agent):-
     situate_agent_environment(Agent, card_shop),
+    env_utils:add_facts(card_shop, 
+                        [stats_(Agent, [sold([]), buyers(0), sellers(0)])]),
     init_beliefs([Agent]),
     delete_facts_beliefs_all(card_shop, Agent,
-                             [stats_([sold(Sold_By), buyers(Buyers),
+                             [stats_(Agent, [sold(Sold_By), buyers(Buyers),
                                       sellers(Sellers)])]),
 
     append(Sold_By, [sold(Agent, 0)], Sold_By2),
     add_facts_beliefs_all(card_shop, Agent,
-                          [stats_([sold(Sold_By2), buyers(Buyers),
+                          [stats_(Agent, [sold(Sold_By2), buyers(Buyers),
                                    sellers(Sellers)])]).
 
 
@@ -226,8 +236,8 @@ card_shop(add_agent, Agent):-
 %  @arg Agent: Name of the agent
 %  @arg Instance: Insatnce of the card_shop environment
 
-card_shop(add_agent, Agent, Instance):-
-    situate_agents_clone([Agent], card_shop, Instance),
+card_shop(add_agent, Agent, Clone):-
+    situate_agents_clone([Agent], card_shop, Clone),
     init_beliefs([Agent]).
 
 
@@ -266,8 +276,15 @@ card_shop(remove_state, Instance, State):-
     remove_environment_instance_state(card_shop, Instance, State).
 
 
-%!  card_shop(perceive, +Agent, -Add_List, - Delete_List) is det
-%   Passes changes to the Agent in the form od Add_List and Delete_List
+
+%===============================================================================
+%                                                                              |
+%    CARD SHOP PERCEIVING                                                      |
+%                                                                              |
+%===============================================================================
+
+%!  card_shop(perceive, +Agent, -Add_List, -Delete_List) is det
+%   Provides environment updates to Agent as Add_List and Delete_List
 %  @arg Agent: Agent that perceives some instance of card_shop environment
 %  @arg Add_List: New percept since last perceiving
 %  @arg Delete_List: Disapeared peceps since last perceiving
@@ -275,18 +292,20 @@ card_shop(remove_state, Instance, State):-
 card_shop(perceive, Agent , Add_List, Delete_List):-
     check_episode(Agent),
     retreive_add_delete(Agent, Add_List, Delete_List),
-    query_environment(card_shop, Agent, stats_([sold(Sold_By),
+    query_environment(card_shop, Agent, stats_(Agent, [sold(Sold_By),
                                                   buyers( _ ), sellers( _ )])),
     delete_facts_beliefs_all(card_shop, Agent,
-                             [stats_([sold(Sold_By), buyers( _ ), sellers( _ )])]),
+                             [stats_(Agent, 
+                                     [sold(Sold_By), buyers( _ ), 
+                                      sellers( _ )])]),
     sellers(S),
     buyers(B),
-    add_facts_beliefs_all(card_shop, Agent, [stats_([sold(Sold_By),
+    add_facts_beliefs_all(card_shop, Agent, [stats_(Agent, [sold(Sold_By),
                                                buyers(B), sellers(S)])]).
 
 
 %!  check_episode(+Agent) is det
-%   Checks if the episode is over and if so, updates environment.
+%   Checks if the episode step is over and if so, updates environment.
 %   TODO should respect particular instances (now it is for all instances)
 %  @arg Agent: agent perceiving environment, could be used for episode checking
 
@@ -411,7 +430,7 @@ add_sellers(Agent):-
     mean_discount_seller(Mean_Seller),
     dispersion_discount_seller(Dispersion_Seller),
     sellers(Seller_Index),
-    new_events_number(Lambda, New_Sellers),
+    poisson_dist_sample(Lambda, New_Sellers),
     sellers_stay(Stay_Length),
     add_persons(Agent, Lambda, seller, Seller_Index, New_Sellers, Mean_Seller,
                 Dispersion_Seller, Stay_Length).
@@ -421,7 +440,7 @@ add_buyers(Agent):-
     mean_discount_buyer(Mean_Buyer),
     dispersion_discount_buyer(Dispersion_Buyer),
     buyers(Buyer_Index),
-    new_events_number(Lambda, New_Buyers),
+    poisson_dist_sample(Lambda, New_Buyers),
     sellers_stay(Stay_Length),
     add_persons(Agent, Lambda, buyer, Buyer_Index, New_Buyers, Mean_Buyer,
                 Dispersion_Buyer, Stay_Length).
@@ -467,8 +486,11 @@ generate_cd_price(CD, Price_Out, Mean, Dispersion):-
 
 
 
-%    Agent acts
-
+%===============================================================================
+%                                                                              |
+%    CARD SHOP ACTING	                                                       |
+%                                                                              |
+%===============================================================================
 
 card_shop(act, Brooker, sell(Seller, Buyer, What), true):-
 %    query_environment(card_shop, Brooker, seller(Seller, What, Price)),
@@ -478,10 +500,11 @@ card_shop(act, Brooker, sell(Seller, Buyer, What), true):-
 
     add_facts_beliefs_all(card_shop, Brooker, [has(Buyer, What),
                                                sold(Seller, What)]),
-    query_environment(card_shop, Brooker, stats_([sold(Sold_By), buyers(B),
-                                                 sellers(S)])),
+    query_environment(card_shop, Brooker, 
+                      stats_(Brooker, [sold(Sold_By), buyers(B), sellers(S)])),
     delete_facts_beliefs_all(card_shop, Brooker,
-                             [stats_([sold(Sold_By), buyers( _ ), sellers( _ )])]),
+                             [stats_(Brooker, 
+                                     [sold(Sold_By), buyers( _ ), sellers( _ )])]),
     delete_facts_beliefs_all(card_shop, Brooker,
                              [buyer(Buyer, What, _)]),
     delete_facts_beliefs_all(card_shop, Brooker,
@@ -491,8 +514,9 @@ card_shop(act, Brooker, sell(Seller, Buyer, What), true):-
                                             deadline(buyer, Buyer, _)]),
 
     add_trade(Sold_By, Brooker, Sold_By2),
-    add_facts_beliefs_all(card_shop, Brooker, [stats_([sold(Sold_By2), buyers(B),
-                                               sellers(S)])]).
+    add_facts_beliefs_all(card_shop, Brooker, 
+                          [stats_(Brooker, [sold(Sold_By2), buyers(B), 
+                                            sellers(S)])]).
 
 
 
@@ -528,11 +552,12 @@ card_shop(act, _, _, fail).
 
 
 
+
+
 :-
     env_utils:register_environment(card_shop),
     findall(product(What, Price), product(What, Price), Facts),
     episode(Episode),
-    env_utils:add_facts(card_shop, [stats_([sold([]), buyers(0), sellers(0)])]),
     env_utils:add_facts(card_shop, Facts),
     env_utils:add_facts(card_shop, [episode(Episode)]).
 

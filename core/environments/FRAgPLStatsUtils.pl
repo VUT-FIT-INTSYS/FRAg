@@ -1,9 +1,9 @@
 
-:-module(stat_utils, 
+:-module(frag_stats, 
     [
         normal_dist_sample /3,
-        get_discount / 3,
-        poisson_dist_sample / 2
+        poisson_dist_sample / 2,
+        get_discount / 3
      ]
 ).
 

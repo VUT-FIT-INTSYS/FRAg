@@ -1,16 +1,25 @@
 
 
-include_reasoning("./reasoning_methods/Basic/FRAgPLReasoningSimple.pl").
-include_reasoning("./reasoning_methods/Basic/FRAgPLReasoningRandom.pl").
+include_reasoning("reasoning_methods/Basic/FRAgPLReasoningSimple.pl").
+include_reasoning("reasoning_methods/Basic/FRAgPLReasoningRandom.pl").
+include_reasoning("reasoning_methods/Basic/FRAgPLReasoningRobin.pl").
+include_reasoning("reasoning_methods/MCTS/FRAgPLReasoningMCTS.pl").
+include_reasoning("reasoning_methods/Joint/FRAgPLReasoningBiggestJoint.pl").
 
-include_environment("./environments/shop/shop.pl").
+% include_environment("/environments/shop/shop.pl").
 
 
 set_agents([(bindings, early),
              (reasoning, simple_reasoning), 
+             (reasoning_params, mcts_params(5,10,50)),
  	     (environment, shop)]).		
 
-set_default([(bindings, late), (reasoning, random_reasoning)]).
+set_agents([(bindings, late), (reasoning, random_reasoning)]).
 
+% set_default(bindings, late).
+% set_default(reasoning, random_reasoning).
+% set_default(reasoning_params, mcts_params(5,10,50)).
+% set_default(environment, env3).		
 
-load("fragagent","fragagent",1,[(reasoning, simple_reasoning), (debug, error)]).
+load("fragagent", "fragagent", 1, [(reasoning, simple_reasoning), (debug, error)]).
+	

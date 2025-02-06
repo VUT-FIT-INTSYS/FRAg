@@ -1,0 +1,18 @@
+                                       
+
+include_environment("environments/task_maze/task_maze.pl").
+
+set_agents([(bindings, early), (reasoning, mcts_reasoning), 
+                % (reasoning, random_reasoning),
+		(reasoning_params, mcts_params(1,75,40)), 
+	        (control, terminate(timeout, 12)), 
+                (environment, task_maze)]).
+		
+
+load("task_maze","../examples/task_maze/task_maze",1,[(debug, reasoningdbg), 
+		(debug, mctsdbg_path), 
+		(debug, mctsdbg), 
+	        (debug, actdbg),
+		(debug, interdbg), (debug, systemdbg)]).
+			   
+			  

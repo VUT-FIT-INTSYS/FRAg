@@ -1,23 +1,18 @@
 
 
-include_environment("./environments/shop/shop.pl").
+include_environment("environments/shop/shop.pl").
 
 
-set_agents([(control, terminate(timeout, 1000)),
+set_agents([ (control, terminate(timeout, 1000)),
              (bindings, early),
-             (reasoning, random_reasoning),
-             (environment, card_shop)]).		
+             (reasoning, robin_reasoning),
+             (environment, card_shop)]).
 
-set_environment(card_shop, [(closing, 750), (s_lambda, 0.1), (b_lambda, 0.1), 
+set_environment(card_shop, [(closing, 750), (s_lambda, 0.1), (b_lambda, 0.1),
                             (b_price,[0.4, 0.2]), (s_price, [0.6, 0.2]),
-                            (products, [8, 0.3, 0.1]), 
-                    %       (episoding, (real_time, 0.0001)) ]).
+                            (products, [8, 0.3, 0.1]),
                             (episoding, sim_time) ]).
 
 
-load("paul","./examples/trader/trader",1,[(debug, systemdbg), (debug, reasoningdbg)]).
-load("peter","./examples/trader/trader",1,[(debug, systemdbg), (bindings, late), (debug, reasoningdbg)]).
-
-
-% load("paul","../examples/trader/trader",1,[(debug, systemdbg)]).
-% load("peter","../examples/trader/trader",1,[(debug, systemdbg), (bindings, late)]).
+load("paul","../examples/trader/trader",1,[(debug, systemdbg), (debug, reasoningdbg)]).
+load("peter","../examples/trader/trader",1,[(debug, systemdbg), (bindings, late), (debug, reasoningdbg)]).

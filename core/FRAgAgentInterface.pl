@@ -4,7 +4,7 @@
 :-module(fRAgAgentInterface,
 	    [
 		add_environment_library /1,             % + init ihned
-                set_environment_attributes /2,
+                set_environment_parameters /2,
 	        environment_loaded /1,
 		clone_environment /2,
 		situate_agent /2,		% + agent, environment
@@ -54,7 +54,6 @@ and environments
 
 
 
-
 is_exclusive_action(Environment, Action):-
     functor(Action, Term, Arity),
     exclusive_action(Environment, Term, Arity).
@@ -82,16 +81,17 @@ add_environment_library(Module_Name):-
 
 
 
-%!  set_environment_attributes(+Environment, +Attributes)
-%   Set Attributes for Environment. Particular possible attributes are described
+%!  set_environment_parameters(+Environment, +Parameters)
+%   Set Parameters for Environment. Particular possible attributes are described
 %   in Environment doncumentation
 %  @arg Environment: Environment identifier
-%  @arg Attributes: Environment's environemnt
+%  @arg Parameters: Environment's environemnt
 
-set_environment_attributes(Environment, Attributes):-
-    Environment_Attrs=..[Environment, set_attributes, Attributes],
+set_environment_parameters(Environment, Parameters):-
+    Environment_Params=..[Environment, set_parameters, Parameters],
     !,
-    Environment_Attrs.
+    Environment_Params.
+
 
 
 %!  get_all_environments(-Environments) is det
@@ -102,12 +102,14 @@ get_all_environments(Environments):-
     findall(Environment, environment(Environment), Environments).
 
 
+
 %!  environment_loaded(+Environment) is semidet
 %   Succeed, if Environment has been added to the system
 %  @arg Environment: Environment identifier
 
 environment_loaded(Environment):-
     environment(Environment).
+
 
 
 %!  clone_environment(+Environment, +Clone) is det
@@ -124,6 +126,7 @@ clone_environment(Environment, Clone):-
     Clone_Environment=..[Environment, clone, Clone],
     !,
     Clone_Environment.
+
 
 
 %!  situate_agent(+Agent:atom, +Environment) is det
@@ -147,11 +150,13 @@ situate_agent2(Agent, Environment):-
     assert(agent_environment(Agent, Environment, Environment)),
     Situate_Agent=..[Environment, add_agent, Agent],
     !,
-    Situate_Agent.
+ writeln(Situate_Agent),
+    Situate_Agent,writeln(hotovo).
 
 situate_agent2(Agent, Environment):-
     format("[IFC] Agent ~w cannot be situated in environment ~w~n",
             [Agent, Environment]).
+
 
 
 %!  situate_agent(+Agent, +Environment, +Clone) is det
@@ -170,11 +175,13 @@ situate_agent(Agent, Environment, Clone):-
 
 situate_agent2(Agent, Environment, Clone):-
     agent_environment(Agent, Environment, _),
-    format("[IFC] Agent ~w cannot be situated in clone ~w of environment ~w,
-            it is already situated in an instance of the environment~n",
+    format('[IFC] Agent ~w cannot be situated in clone ~w of environment ~w,
+            it is already situated in an instance of the environment~n',
             [Agent, Clone, Environment]),
     !,
     fail.
+
+
 
 
 %!  get_agent_environments(+Agent, +Environments) is det
@@ -193,7 +200,7 @@ get_agent_environments(_, []).
 %!  get_agent_instance(+Agent, +Environment, +Clone) is det
 %   Provides Clone for an Environment where Agent is sistuated in
 %  @arg Agent: agent name / identifier
-%  @arg Environment2: One of Environment(s), where Agent is situated in
+%  @arg Environment2: One of Environments, where Agent is situated in
 %  @arg Clone, where the Agent is. If it is the same as Envronment, Agent is in
 %   the original instance of Environment
 
@@ -224,6 +231,7 @@ virtualize_agent(Agent, Agent2):-
     virtualize_agent_environments(Agent2, Environments).
 
 virtualize_agent(_, _).
+
 
 
 %!  virtualize_agents(+Agent, ?Virtual_Agents) is det
@@ -341,11 +349,10 @@ agent_acts( _, _, _, false).
 
 
 agent_acts2(Agent, Environment, Act, Result):-
-    Act_In_Environment =.. [Environment, act, Agent, Act, Result],
-
-    clause(Act_In_Environment, _),			% does it exist?
-    Act_In_Environment.
-
+   Act_In_Environment_T =.. [Environment, act, Agent, Act, _],
+   Act_In_Environment =.. [Environment, act, Agent, Act, Result],
+   clause(Act_In_Environment_T, _),			% does it exist?
+   Act_In_Environment.
 
 
 %!  reset_clone(+Environments, +Clone)

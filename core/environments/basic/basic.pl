@@ -1,11 +1,14 @@
  
 /**
- 	FragPL, basic environment / ... internal actions
+
+FragPL, basic environment / ... internal actions
        
 @author Frantisek Zboril jr. 
 @version 2021 - 2023
 @licence
 */
+
+:-dynamic reward /3.
 
 
 % environment(basic).			% zde by mely byt standardni akce, komunikace ...
@@ -18,11 +21,13 @@ action(basic, me, 1).
 
 action(basic, population, 1).
 
+action(basic, reward, 1).
 
 % 	
 %   	FRAg internal actions
 %   	
 
+action(basic, reward, 1).
 action(basic, send,2).
 action(basic, bcast,1). 
 action(basic, sendfg,2). 		% sendFrag ?
@@ -70,7 +75,7 @@ printfg(String):-
     format(atom(String4), String3, [Agent]),
     write(current_output, String4).
 
-  printfg(String, Parameters):-
+printfg(String, Parameters):-
 	format(atom(String2), String, Parameters),
 	term_string(String2, String3),
 	printfg(String3).
@@ -100,10 +105,11 @@ me(X):-
     thread_self(X).
 
 
-sendfg(Receiver,Payload):-
-    thread_self(ME),
+
+sendfg(Receiver, Payload):-
+    thread_self(Me),
     printfg("Sending message ~w~n",[Receiver]),
-    thread_send_message(Receiver,message(ME,inform,pld(Payload))),
+    thread_send_message(Receiver,message(Me, inform,pld(Payload))),
     printfg("Send succeed ~n").
 
 sendfg(_,_):-
@@ -126,7 +132,7 @@ bcast(Payload):-
     bagof(Agent, fRAgBlackboard:agent(Agent) , Agents),
     bcast2(Agents, Payload).
 		
-bcast(_).
+bcast( _ ).
 
 
 %
@@ -146,6 +152,12 @@ jprintfg(String):-
 %    is_exclusive_action(basic, Act),
 %    Act.
 
+% reward act must produce Reward as output
+
+basic(act, _, reward(Reward), reward(Reward)).
+
+% silent acts
+
 basic(act, _, silently_(printfg( _ )), true).
 
 basic(act, _, silently_(printfg( _, _)), true).
@@ -157,17 +169,24 @@ basic(act, _, silently_(format( _)), true).
 basic(act, _, silently_(format( _, _)), true).
 
 basic(act, Agent, silently_(Act), Result):-
-% neni zde zadna, co opravdu chceme umlcet?
+% there is none, do we need to silent it?
     basic(act, Agent, Act, Result). 
+
+
+%   any joint action
 
 basic(act, _, Act, Result):-
     is_joint_action(basic, Act),
     Act,
     Result is Act.
 
+%   any non-joint action
+
 basic(act, _, Act, true):-
     Act.
 	         
+%   action failed
+
 basic(act, _, _, fail).
 
 

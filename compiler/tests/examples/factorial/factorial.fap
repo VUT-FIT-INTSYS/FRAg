@@ -1,0 +1,5 @@
+goal(ach,count,[[]]).
+
+plan(ach,count,[],[add(fct(0,1))]).
+plan(add,fct(X,Y),[X<8],[rel(Z is X+1),rel(W is Z*Y),add(fct(Z,W))]).
+plan(add,fct(X,Y),[X==8],[act(format("fact 8 ==~w~n", [Y]))]).

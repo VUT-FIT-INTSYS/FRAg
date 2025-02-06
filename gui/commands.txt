@@ -1,0 +1,5 @@
+Run designer:
+    pyqt6-tools designer
+
+Generate python file from .ui file:
+    pyuic6 design.ui -o design.py

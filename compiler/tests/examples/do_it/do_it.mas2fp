@@ -1,0 +1,5 @@
+include_environment("<environments>/workshop/workshop.pl").
+
+set_environment(simple_shop, []).
+
+load("do_it","<PATH>/do_it",1,[(debug,systemdbg)]).

@@ -1,0 +1,10 @@
+include_environment("<environments>/workshop/workshop.pl").
+
+set_environment(workshop, [(resources_rates,[resource(wood,0.15),resource(plastic,0.05),resource(metal,0.12),resource(stone,0.1),resource(glass,0.08)]),(resources_max,80),(tasks_rate,0.08),(tasks_max,110)]).
+
+set_agents([(control,terminate(timeout,1200)),(reasoning,random_reasoning),(environment,workshop)]).
+
+load("workerCL","<PATH>/worker",1,[(bindings,late),(reasoning,robin_reasoning),(debug,actdbg)]).
+load("workerCE","<PATH>/worker",1,[(bindings,early),(reasoning,robin_reasoning),(debug,actdbg)]).
+load("workerL","<PATH>/worker",1,[(bindings,late),(debug,actdbg)]).
+load("workerE","<PATH>/worker",1,[(bindings,early),(debug,actdbg)]).

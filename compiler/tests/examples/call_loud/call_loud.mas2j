@@ -1,0 +1,24 @@
+MAS call_loud {
+    infrastructure: Centralised
+    environment: call_loud "<environments>/call_loud/environment.pl" [
+        (par_a, (resources, [resource(res1, 0.2), resource(res2, 0.55)])),
+        (par_b, 100),
+        (par_b, 0.1),
+        (par_c, [0.5, 0.3]),
+        (par_d, foo)
+    ]
+    agent_defaults: [
+        (bindings, early),
+        (reasoning, mcts_reasoning),
+        (reasoning_params, mcts_params(10, 20, 40)),
+        (control, terminate(timeout, 12))
+    ]
+    agents: call_loud [
+        (debug, reasoningdbg),
+        (debug, mctsdbg_path),
+        (debug, mctsdbg),
+        (debug, actdbg),
+        (debug, interdbg),
+        (debug, systemdbg)
+    ];
+}

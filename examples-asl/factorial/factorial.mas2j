@@ -1,0 +1,4 @@
+MAS factorial {
+    infrastructure: Centralised
+    agents: factorial factorial.asl;
+ }

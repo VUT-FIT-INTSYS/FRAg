@@ -1,0 +1,5 @@
+plan(ach,fact(X,Y),[X<5],[add(fact(X+1,(X+1)*Y))]).
+plan(ach,fact(X,Y),[X==5],[act(format("fact 5 ==~w~n", [Y]))]).
+goal(ach,count,[[]]).
+
+plan(ach,count,[],[add(fact(0,1))]).

@@ -5,7 +5,7 @@ include_environment("environments/shop/shop.pl").
 
 set_agents([ (control, terminate(timeout, 1000)),
              (bindings, early),
-             (reasoning, robin_reasoning),
+             (reasoning, random_reasoning),
              (environment, card_shop)]).
 
 set_environment(card_shop, [(closing, 750), (s_lambda, 0.1), (b_lambda, 0.1),
